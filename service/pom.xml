@@ -76,6 +76,28 @@
           </archive>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>0.3.258</version>
+        <configuration>
+          <imageName>auth-service</imageName>
+          <baseImage>java</baseImage>
+          <entryPoint>["java", "-jar", "/usr/share/auth-service/${project.build.finalName}.jar"]</entryPoint>
+          <resources>
+            <resource>
+              <targetPath>/usr/share/auth-service</targetPath>
+              <directory>${project.build.directory}</directory>
+              <include>${project.build.finalName}.jar</include>
+            </resource>
+            <resource>
+              <targetPath>/usr/share/auth-service/lib</targetPath>
+              <directory>${project.build.directory}/lib</directory>
+              <include>*</include>
+            </resource>
+          </resources>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 </project>
