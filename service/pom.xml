@@ -29,6 +29,11 @@
       <artifactId>apollo-http-service</artifactId>
       <version>1.0.1</version>
     </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.14</version>
+    </dependency>
   </dependencies>
 
   <build>
