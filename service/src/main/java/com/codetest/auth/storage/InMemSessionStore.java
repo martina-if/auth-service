@@ -29,7 +29,7 @@ public class InMemSessionStore implements SessionStore {
     if (Strings.isNullOrEmpty(username)) {
       return false;
     }
-    return username.equals(userSessionTokens.getIfPresent(username));
+    return sessionToken.equals(userSessionTokens.getIfPresent(username));
   }
 
 }
