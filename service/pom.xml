@@ -62,6 +62,11 @@
       <artifactId>mockito-all</artifactId>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>apollo-test</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
