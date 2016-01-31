@@ -1,5 +1,6 @@
 package com.codetest.auth;
 
+import com.codetest.auth.api.ActivityResource;
 import com.codetest.auth.api.LoginResource;
 import com.codetest.auth.api.RegisterResource;
 import com.codetest.auth.storage.InMemSessionStore;
@@ -26,10 +27,12 @@ public class ServiceRunner {
 
     LoginResource loginResource = new LoginResource(sessionStore, userDataStore, passwords);
     RegisterResource registerResource = new RegisterResource(userDataStore);
+    ActivityResource activityResource = new ActivityResource(userDataStore);
 
     environment.routingEngine()
         .registerAutoRoute(Route.sync("GET", "/ping", requestContext -> "pong"))
         .registerAutoRoutes(loginResource)
-        .registerAutoRoutes(registerResource);
+        .registerAutoRoutes(registerResource)
+        .registerAutoRoutes(activityResource);
   }
 }
