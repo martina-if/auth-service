@@ -19,3 +19,12 @@ docker run -it --rm -p 8080 auth-service
 docker ps # Check assigned port
 curl http://localhost:[port]/ping
 ```
+
+## Sample queries
+```
+curl -v -X POST -d '{"username":"myname","password":"pass"}' http://localhost:8080/v0/login
+
+curl -v -X POST -d '{"username":"eu2","password":"1234","fullname":"MI"}' http://localhost:8080/v0/register
+
+```
+
