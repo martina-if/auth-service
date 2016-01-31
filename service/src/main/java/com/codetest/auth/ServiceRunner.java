@@ -6,6 +6,7 @@ import com.codetest.auth.storage.InMemSessionStore;
 import com.codetest.auth.storage.InMemUserDataStore;
 import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserDataStore;
+import com.codetest.auth.util.Passwords;
 import com.spotify.apollo.Environment;
 import com.spotify.apollo.httpservice.HttpService;
 import com.spotify.apollo.httpservice.LoadingException;
@@ -21,8 +22,9 @@ public class ServiceRunner {
 
     SessionStore sessionStore = new InMemSessionStore();
     UserDataStore userDataStore = new InMemUserDataStore();
-    LoginResource loginResource = new LoginResource(sessionStore, userDataStore);
+    Passwords passwords = new Passwords();
 
+    LoginResource loginResource = new LoginResource(sessionStore, userDataStore, passwords);
     RegisterResource registerResource = new RegisterResource(userDataStore);
 
     environment.routingEngine()

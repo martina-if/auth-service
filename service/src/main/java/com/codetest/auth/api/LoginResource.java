@@ -4,6 +4,7 @@ import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
 import com.codetest.auth.util.ObjectMappers;
+import com.codetest.auth.util.Passwords;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.spotify.apollo.RequestContext;
@@ -25,10 +26,12 @@ public class LoginResource implements RouteProvider {
 
   private final SessionStore sessionStore;
   private final UserDataStore userDataStore;
+  private final Passwords passwords;
 
-  public LoginResource(SessionStore sessionStore, UserDataStore userDataStore) {
+  public LoginResource(SessionStore sessionStore, UserDataStore userDataStore, Passwords passwords) {
     this.sessionStore = sessionStore;
     this.userDataStore = userDataStore;
+    this.passwords = passwords;
   }
 
   @Override
@@ -60,7 +63,12 @@ public class LoginResource implements RouteProvider {
       return Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate"));
     }
 
-    // TODO: Check password
+    boolean validPassword = passwords.checkPassword(loginRequest.password(),
+                                        userData.get().salt(),
+                                        userData.get().password());
+    if (!validPassword) {
+      return Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate"));
+    }
 
     // Write access time
     userDataStore.markUserAccess(username);
