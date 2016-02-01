@@ -31,4 +31,5 @@ curl -v -X POST -d '{"username":"eu2","password":"1234","fullname":"MI"}' http:/
 # TODO
   - Middleware json serialization
   - Middleware EndpointException ?
+  - HTTPS
 
