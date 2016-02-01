@@ -1,6 +1,7 @@
 package com.codetest.auth.storage;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
 
 import com.codetest.auth.EndpointException;
@@ -17,12 +18,13 @@ import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
 import com.spotify.apollo.Status;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.math.BigInteger;
+import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -37,8 +39,9 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   private final PreparedStatement INSERT;
   private final PreparedStatement UPDATE;
   private final Clock clock;
-  private final Cluster cluster;
   private final Passwords passwords;
+  private final SecureRandom random = new SecureRandom();
+  private final Cluster cluster;
   private Session session;
 
   public CassandraDataStore(String node, final Passwords passwords) {
@@ -84,13 +87,14 @@ public class CassandraDataStore implements UserDataStore, Closeable {
       throw new EndpointException(Status.BAD_REQUEST, "Unable to create user");
     }
 
-    String firstTimestamp = TimeUtil.timestamp(clock);
     // Insert user
-    String encryptedPassword = passwords.encryptPassword(passwordText, "salt");
+    String firstTimestamp = TimeUtil.timestamp(clock);
+    String salt = newSalt();
+    String encryptedPassword = passwords.encryptPassword(passwordText, salt);
     BoundStatement insert = INSERT.bind(userid(username),
                                         username,
                                         fullname,
-                                        "salt", // FIXME salt
+                                        salt,
                                         encryptedPassword,
                                         Collections.singletonList(firstTimestamp));
     ResultSet insertResult = session.execute(insert);
@@ -101,7 +105,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
     return new UserDataBuilder()
         .username(username)
         .fullname(fullname)
-        .salt("salt") // FIXME
+        .salt(salt)
         .password(encryptedPassword)
         .loginTimestamps(firstTimestamp)
         .build();
@@ -189,13 +193,17 @@ public class CassandraDataStore implements UserDataStore, Closeable {
     return allUsers;
   }
 
+  /**
+   * user ids will be SHA-256 of the username. Mainly to improve data distribution if sharded
+   */
   private static String userid(String username) {
-    try {
-      MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
-      messageDigest.update(username.getBytes());
-      return new String(messageDigest.digest());
-    } catch (NoSuchAlgorithmException e) {
-      throw new RuntimeException("Unable to instantiate hash algorithm");
-    }
+    return new String(DigestUtils.sha256(username), Charsets.UTF_8);
+  }
+
+  /**
+   * Generates a random salt of 6 characters
+   */
+  private String newSalt() {
+    return new BigInteger(30, random).toString(32);
   }
 }

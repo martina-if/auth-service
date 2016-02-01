@@ -53,7 +53,7 @@ public class RegisterResource implements RouteProvider {
       return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload"));
     }
 
-    // TODO Validate input data and encrypt password
+    // TODO Validate input data
 
     // Store new user data
     UserData userData = userDataStore.createUserData(request.username(),
