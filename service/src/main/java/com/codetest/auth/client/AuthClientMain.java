@@ -29,8 +29,18 @@ public class AuthClientMain {
 
       switch (args[0]) {
         case "login":
-          Response<ByteString> response = authClient.sendLoginRequest(getOption(commandLine, "u"), getOption(commandLine, "p"));
-          printResponse(response);
+          printResponse(authClient.sendLoginRequest(getOption(commandLine, "u"),
+                                                    getOption(commandLine, "p")));
+          break;
+        case "register":
+          printResponse(authClient.sendRegisterRequest(getOption(commandLine, "u"),
+                                                       getOption(commandLine, "p"),
+                                                       getOption(commandLine, "f")));
+          break;
+        case "activity":
+          printResponse(authClient.sendActivityRequest(getOption(commandLine, "a"),
+                                                       getOption(commandLine, "u"),
+                                                       getOption(commandLine, "s")));
           break;
         default:
           error("Unrecognized command");
@@ -68,10 +78,15 @@ public class AuthClientMain {
                           .hasArg()
                           .desc("Session token for authentication")
                           .build());
-    options.addOption(Option.builder("l")
+    options.addOption(Option.builder("a")
                           .argName("login-username")
                           .hasArg()
                           .desc("Username to lookup login times for")
+                          .build());
+    options.addOption(Option.builder("f")
+                          .argName("full-name")
+                          .hasArg()
+                          .desc("Full name")
                           .build());
     CommandLineParser parser = new DefaultParser();
 

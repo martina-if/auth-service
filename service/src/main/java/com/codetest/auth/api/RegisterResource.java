@@ -68,14 +68,14 @@ public class RegisterResource implements RouteProvider {
 
   @AutoMatter
   @JsonIgnoreProperties(ignoreUnknown = true)
-  interface RegisterRequest {
+  public interface RegisterRequest {
     String username();
     String password();
     String fullname();
   }
 
   @AutoMatter
-  interface RegisterResponse {
+  public interface RegisterResponse {
     String username();
     String fullname();
   }

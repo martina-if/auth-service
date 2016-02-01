@@ -41,10 +41,13 @@ public class HttpClient {
         return RequestBody.create(contentType, payload);
       });
 
-      final Request request = new Request.Builder()
+      final Request.Builder request = new Request.Builder()
           .method(apolloRequest.method(), requestBody.orElse(null))
-          .url(apolloRequest.uri())
-          .build();
+          .url(apolloRequest.uri());
+
+      for (Map.Entry<String, String> header : apolloRequest.headers().entrySet()) {
+        request.addHeader(header.getKey(), header.getValue());
+      }
 
       final CompletableFuture<Response<ByteString>> result =
           new CompletableFuture<>();
@@ -57,7 +60,7 @@ public class HttpClient {
         finalClient.setReadTimeout(apolloRequest.ttl().get().toMillis(), TimeUnit.MILLISECONDS);
       }
 
-      com.squareup.okhttp.Response response = finalClient.newCall(request).execute();
+      com.squareup.okhttp.Response response = finalClient.newCall(request.build()).execute();
 
       return transformResponse(response);
     }
