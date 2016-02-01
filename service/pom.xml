@@ -50,6 +50,12 @@
       <groupId>com.spotify</groupId>
       <artifactId>apollo-extra</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.datastax.cassandra</groupId>
+      <artifactId>cassandra-driver-core</artifactId>
+      <version>2.0.10</version>
+    </dependency>
+
     <!--client only-->
     <dependency>
       <groupId>commons-cli</groupId>
@@ -60,6 +66,7 @@
       <groupId>com.squareup.okhttp</groupId>
       <artifactId>okhttp</artifactId>
     </dependency>
+
     <!--test dependencies-->
     <dependency>
       <groupId>junit</groupId>
