@@ -89,14 +89,14 @@ public class LoginResource implements RouteProvider {
 
   @AutoMatter
   @JsonIgnoreProperties(ignoreUnknown = true)
-  interface LoginRequest {
+  public interface LoginRequest {
     String username();
     String password();
   }
 
   @AutoMatter
   @JsonInclude(JsonInclude.Include.NON_NULL)
-  interface LoginResponse {
+  public interface LoginResponse {
     @Nullable
     String status();
 
