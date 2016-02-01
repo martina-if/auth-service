@@ -27,7 +27,7 @@ public class ServiceRunner {
 
     LoginResource loginResource = new LoginResource(sessionStore, userDataStore, passwords);
     RegisterResource registerResource = new RegisterResource(userDataStore);
-    ActivityResource activityResource = new ActivityResource(userDataStore);
+    ActivityResource activityResource = new ActivityResource(userDataStore, sessionStore);
 
     environment.routingEngine()
         .registerAutoRoute(Route.sync("GET", "/ping", requestContext -> "pong"))

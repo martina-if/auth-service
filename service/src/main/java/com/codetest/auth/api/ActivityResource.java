@@ -1,7 +1,9 @@
 package com.codetest.auth.api;
 
+import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
+import com.codetest.auth.util.HeadersUtil;
 import com.codetest.auth.util.ObjectMappers;
 import com.spotify.apollo.RequestContext;
 import com.spotify.apollo.Response;
@@ -24,9 +26,11 @@ public class ActivityResource implements RouteProvider {
 
   private static final int NUM_LOGIN_ATTEMPTS = 5;
   private final UserDataStore userDataStore;
+  private final SessionStore sessionStore;
 
-  public ActivityResource(final UserDataStore userDataStore) {
+  public ActivityResource(final UserDataStore userDataStore, final SessionStore sessionStore) {
     this.userDataStore = userDataStore;
+    this.sessionStore = sessionStore;
   }
 
   @Override
@@ -47,7 +51,13 @@ public class ActivityResource implements RouteProvider {
     }
 
     // Check authorization
-    // TODO Check authorization token from header
+    Optional<String> sessionToken = HeadersUtil.getSessionToken(context.request());
+    Optional<String> authUsername = HeadersUtil.getUsername(context.request());
+    if (!sessionToken.isPresent() ||
+        !authUsername.isPresent() ||
+        !sessionStore.isValidToken(authUsername.get(), sessionToken.get())) {
+      return Response.forStatus(Status.UNAUTHORIZED);
+    }
 
     // Recover user data for username
     Optional<UserData> userData = userDataStore.fetchUserData(activityUsername);
