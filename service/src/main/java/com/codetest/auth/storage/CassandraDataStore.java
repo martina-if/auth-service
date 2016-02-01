@@ -20,6 +20,8 @@ import org.slf4j.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.util.Collections;
 import java.util.List;
@@ -44,14 +46,14 @@ public class CassandraDataStore implements UserDataStore, Closeable {
     createSchema();
 
     SELECT = session.prepare(
-        "SELECT * FROM user.accounts WHERE username = ?;");
+        "SELECT * FROM user.accounts WHERE userid = ?;");
     INSERT = session.prepare(
-        "INSERT INTO user.accounts (username, fullname, salt, password, activity) " +
-        "VALUES (?, ?, ?, ? , ?)" +
+        "INSERT INTO user.accounts (userid, username, fullname, salt, password, activity) " +
+        "VALUES (?, ?, ?, ?, ? , ?)" +
         "IF NOT EXISTS" +
         ";");
     UPDATE = session.prepare(
-        "UPDATE user.accounts SET activity = activity + ? WHERE username = ?"
+        "UPDATE user.accounts SET activity = activity + ? WHERE userid = ?"
     );
   }
 
@@ -73,7 +75,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   public UserData createUserData(final String username, final String password, final String fullname) {
 
     // Check if user exists
-    BoundStatement select = SELECT.bind(username);
+    BoundStatement select = SELECT.bind(userid(username));
     ResultSet selectResult= session.execute(select); // FIXME make async
     if (!selectResult.isExhausted()) {
       throw new EndpointException(Status.BAD_REQUEST, "Unable to create user");
@@ -81,7 +83,8 @@ public class CassandraDataStore implements UserDataStore, Closeable {
 
     String firstTimestamp = TimeUtil.timestamp(clock);
     // Insert user
-    BoundStatement insert = INSERT.bind(username,
+    BoundStatement insert = INSERT.bind(userid(username),
+                                        username,
                                         fullname,
                                         "salt", // FIXME salt
                                         password,
@@ -102,8 +105,8 @@ public class CassandraDataStore implements UserDataStore, Closeable {
 
   @Override
   public Optional<UserData> fetchUserData(final String username) {
-    BoundStatement select = SELECT.bind(username);
-    ResultSet selectResult= session.execute(select); // FIXME make async
+    BoundStatement select = SELECT.bind(userid(username));
+    ResultSet selectResult = session.execute(select); // FIXME make async
     if (selectResult.isExhausted()) {
       return Optional.empty();
     }
@@ -120,12 +123,13 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   @Override
   public void markUserAccess(final String username) {
     String newTimestamp = TimeUtil.timestamp(clock);
-    ResultSet selectResult = session.execute(SELECT.bind(username));
+    ResultSet selectResult = session.execute(SELECT.bind(userid(username)));
     if (selectResult.isExhausted()) {
       throw new EndpointException(Status.NOT_FOUND, "User not found");
     }
 
-    BoundStatement update = UPDATE.bind(Collections.singletonList(newTimestamp), username);
+    BoundStatement update = UPDATE.bind(Collections.singletonList(newTimestamp),
+                                        userid(username));
     ResultSet updateResult = session.execute(update);
     if (!updateResult.wasApplied()) {
       LOG.warn("Could not update activity for user {}", username);
@@ -152,7 +156,8 @@ public class CassandraDataStore implements UserDataStore, Closeable {
       LOG.info("Creating table user.accounts");
       session.execute(
           "CREATE TABLE user.accounts (" +
-          "username text PRIMARY KEY," +
+          "userid text PRIMARY KEY," +
+          "username text," +
           "fullname text," +
           "salt text," +
           "password text," +
@@ -180,4 +185,13 @@ public class CassandraDataStore implements UserDataStore, Closeable {
     return allUsers;
   }
 
+  private static String userid(String username) {
+    try {
+      MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+      messageDigest.update(username.getBytes());
+      return new String(messageDigest.digest());
+    } catch (NoSuchAlgorithmException e) {
+      throw new RuntimeException("Unable to instantiate hash algorithm");
+    }
+  }
 }
