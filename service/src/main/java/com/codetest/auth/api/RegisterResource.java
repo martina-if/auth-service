@@ -8,6 +8,7 @@ import com.spotify.apollo.RequestContext;
 import com.spotify.apollo.Response;
 import com.spotify.apollo.Status;
 import com.spotify.apollo.route.AsyncHandler;
+import com.spotify.apollo.route.JsonSerializerMiddlewares;
 import com.spotify.apollo.route.Route;
 import com.spotify.apollo.route.RouteProvider;
 
@@ -32,6 +33,8 @@ public class RegisterResource implements RouteProvider {
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
         Route.sync("POST", "/v0/register", this::registerUser)
+            .withMiddleware(JsonSerializerMiddlewares.
+                jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 
@@ -44,7 +47,7 @@ public class RegisterResource implements RouteProvider {
     RegisterRequest request;
     try {
       request = ObjectMappers.JSON.readValue(context.request().payload().get().toByteArray(),
-                                                     RegisterRequest.class);
+                                             RegisterRequest.class);
     } catch (IOException e) {
       return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload"));
     }

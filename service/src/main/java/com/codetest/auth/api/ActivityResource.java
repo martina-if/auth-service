@@ -2,10 +2,12 @@ package com.codetest.auth.api;
 
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
+import com.codetest.auth.util.ObjectMappers;
 import com.spotify.apollo.RequestContext;
 import com.spotify.apollo.Response;
 import com.spotify.apollo.Status;
 import com.spotify.apollo.route.AsyncHandler;
+import com.spotify.apollo.route.JsonSerializerMiddlewares;
 import com.spotify.apollo.route.Route;
 import com.spotify.apollo.route.RouteProvider;
 
@@ -31,6 +33,8 @@ public class ActivityResource implements RouteProvider {
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
         Route.sync("GET", "/v0/activity/logins/<username>", this::loginActivity)
+            .withMiddleware(JsonSerializerMiddlewares.
+                jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 

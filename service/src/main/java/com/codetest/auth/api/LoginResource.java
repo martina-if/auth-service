@@ -11,6 +11,7 @@ import com.spotify.apollo.RequestContext;
 import com.spotify.apollo.Response;
 import com.spotify.apollo.Status;
 import com.spotify.apollo.route.AsyncHandler;
+import com.spotify.apollo.route.JsonSerializerMiddlewares;
 import com.spotify.apollo.route.Route;
 import com.spotify.apollo.route.RouteProvider;
 
@@ -38,8 +39,9 @@ public class LoginResource implements RouteProvider {
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
         Route.sync("POST", "/v0/login", this::login)
+            .withMiddleware(JsonSerializerMiddlewares.
+                jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
-    // TODO Json serializer middleware
   }
 
   private Response<LoginResponse> login(RequestContext context) {
@@ -64,8 +66,8 @@ public class LoginResource implements RouteProvider {
     }
 
     boolean validPassword = passwords.checkPassword(loginRequest.password(),
-                                        userData.get().salt(),
-                                        userData.get().password());
+                                                    userData.get().salt(),
+                                                    userData.get().password());
     if (!validPassword) {
       return Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate"));
     }

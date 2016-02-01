@@ -46,6 +46,10 @@
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>apollo-extra</artifactId>
+    </dependency>
     <!--test dependencies-->
     <dependency>
       <groupId>junit</groupId>
