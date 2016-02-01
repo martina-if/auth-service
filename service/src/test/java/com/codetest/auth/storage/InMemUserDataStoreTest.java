@@ -40,8 +40,8 @@ public class InMemUserDataStoreTest {
     assertEquals("passwd", userData.password()); // FIXME
     assertEquals("salt", userData.salt()); // FIXME
     assertEquals("fullname", userData.fullname());
-    assertEquals(1, userData.accessTimes().size());
-    assertEquals(CURRENT_TIME, userData.accessTimes().get(0));
+    assertEquals(1, userData.loginTimestamps().size());
+    assertEquals(CURRENT_TIME, userData.loginTimestamps().get(0));
   }
 
   @Test
@@ -60,8 +60,8 @@ public class InMemUserDataStoreTest {
     inMemUserDataStore.markUserAccess("username");
     Optional<UserData> userdata = inMemUserDataStore.fetchUserData("username");
     assertTrue(userdata.isPresent());
-    assertEquals(2, userdata.get().accessTimes().size());
-    assertEquals(CURRENT_TIME, userdata.get().accessTimes().get(0));
-    assertEquals(second.toString(), userdata.get().accessTimes().get(1));
+    assertEquals(2, userdata.get().loginTimestamps().size());
+    assertEquals(CURRENT_TIME, userdata.get().loginTimestamps().get(0));
+    assertEquals(second.toString(), userdata.get().loginTimestamps().get(1));
   }
 }

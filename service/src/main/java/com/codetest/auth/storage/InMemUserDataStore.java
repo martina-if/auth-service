@@ -37,7 +37,7 @@ public class InMemUserDataStore implements UserDataStore {
         .password(password) // FIXME
         .salt("salt") // FIXME
         .fullname(fullname)
-        .accessTimes(Collections.singletonList(TimeUtil.timestamp(clock)))
+        .loginTimestamps(Collections.singletonList(TimeUtil.timestamp(clock)))
         .build();
     users.put(username, userData);
     return userData;
@@ -54,9 +54,9 @@ public class InMemUserDataStore implements UserDataStore {
     if (userData == null) {
       throw new EndpointException(Status.BAD_REQUEST, "Invalid request");
     }
-    List<String> timestamps = new ArrayList<>(userData.accessTimes());
+    List<String> timestamps = new ArrayList<>(userData.loginTimestamps());
     timestamps.add(TimeUtil.timestamp(clock));
-    UserData newUserData = UserDataBuilder.from(userData).accessTimes(timestamps).build();
+    UserData newUserData = UserDataBuilder.from(userData).loginTimestamps(timestamps).build();
     users.put(username, newUserData);
   }
 }

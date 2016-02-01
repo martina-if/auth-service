@@ -36,13 +36,13 @@ public class ActivityResource implements RouteProvider {
   @Override
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
-        Route.sync("GET", "/v0/activity/logins/<username>", this::loginActivity)
+        Route.sync("GET", "/v0/activity/<username>", this::loginActivity)
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 
-  private Response<LoginActivityResponse> loginActivity(RequestContext context) {
+  private Response<ActivityResponse> loginActivity(RequestContext context) {
 
     // Parse request
     String activityUsername = context.pathArgs().get("username");
@@ -65,18 +65,18 @@ public class ActivityResource implements RouteProvider {
       return Response.forStatus(Status.BAD_REQUEST); // Leaking usernames..
     }
 
-    List<String> allLogins = userData.get().accessTimes();
+    List<String> allLogins = userData.get().loginTimestamps();
     
     // Get last 5 elements of the list since each new attempt is appended to the end
     List<String> lastLogins = allLogins.subList(Math.max(0, allLogins.size() - NUM_LOGIN_ATTEMPTS), allLogins.size());
 
-    return Response.forPayload(new LoginActivityResponseBuilder()
-                                   .timestamps(lastLogins)
+    return Response.forPayload(new ActivityResponseBuilder()
+                                   .logins(lastLogins)
                                    .build());
   }
 
   @AutoMatter
-  interface LoginActivityResponse {
-    List<String> timestamps();
+  interface ActivityResponse {
+    List<String> logins();
   }
 }

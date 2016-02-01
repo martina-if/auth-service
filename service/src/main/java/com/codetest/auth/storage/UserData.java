@@ -14,6 +14,6 @@ public interface UserData {
   String password();
   String salt();
   String fullname();
-  List<String> accessTimes();
+  List<String> loginTimestamps();
 
 }
