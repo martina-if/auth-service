@@ -39,6 +39,7 @@ public class LoginResource implements RouteProvider {
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
         Route.sync("POST", "/v0/login", this::login)
+            .withMiddleware(Middlewares.checkExceptions())
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );

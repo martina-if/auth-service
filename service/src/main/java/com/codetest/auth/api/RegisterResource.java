@@ -33,6 +33,7 @@ public class RegisterResource implements RouteProvider {
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
         Route.sync("POST", "/v0/register", this::registerUser)
+            .withMiddleware(Middlewares.checkExceptions())
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
