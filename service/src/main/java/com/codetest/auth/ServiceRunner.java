@@ -12,6 +12,7 @@ import com.spotify.apollo.Environment;
 import com.spotify.apollo.httpservice.HttpService;
 import com.spotify.apollo.httpservice.LoadingException;
 import com.spotify.apollo.route.Route;
+import com.typesafe.config.Config;
 
 public class ServiceRunner {
 
@@ -20,11 +21,12 @@ public class ServiceRunner {
   }
 
   static void init(Environment environment) {
+    Config config = environment.config();
+    String cassandraNode = config.getString("cassandra.node");
+    Passwords passwords = new Passwords(config.getString("passwords.key"));
 
-    String cassandraNode = environment.config().getString("cassandra.node");
-    UserDataStore userDataStore = new CassandraDataStore(cassandraNode);
+    UserDataStore userDataStore = new CassandraDataStore(cassandraNode, passwords);
     SessionStore sessionStore = new InMemSessionStore();
-    Passwords passwords = new Passwords();
 
     LoginResource loginResource = new LoginResource(sessionStore, userDataStore, passwords);
     RegisterResource registerResource = new RegisterResource(userDataStore);

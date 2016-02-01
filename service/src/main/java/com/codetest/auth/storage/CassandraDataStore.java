@@ -4,6 +4,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 
 import com.codetest.auth.EndpointException;
+import com.codetest.auth.util.Passwords;
 import com.codetest.auth.util.TimeUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
@@ -31,15 +32,17 @@ import static org.slf4j.LoggerFactory.getLogger;
 
 public class CassandraDataStore implements UserDataStore, Closeable {
 
+  private static final Logger LOG = getLogger(CassandraDataStore.class);
   private final PreparedStatement SELECT;
   private final PreparedStatement INSERT;
   private final PreparedStatement UPDATE;
-  private static final Logger LOG = getLogger(CassandraDataStore.class);
   private final Clock clock;
   private final Cluster cluster;
+  private final Passwords passwords;
   private Session session;
 
-  public CassandraDataStore(String node) {
+  public CassandraDataStore(String node, final Passwords passwords) {
+    this.passwords = passwords;
     this.clock = Clock.systemUTC();
     cluster = connect(node);
     session = cluster.connect();
@@ -72,7 +75,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   }
 
   @Override
-  public UserData createUserData(final String username, final String password, final String fullname) {
+  public UserData createUserData(final String username, final String passwordText, final String fullname) {
 
     // Check if user exists
     BoundStatement select = SELECT.bind(userid(username));
@@ -83,11 +86,12 @@ public class CassandraDataStore implements UserDataStore, Closeable {
 
     String firstTimestamp = TimeUtil.timestamp(clock);
     // Insert user
+    String encryptedPassword = passwords.encryptPassword(passwordText, "salt");
     BoundStatement insert = INSERT.bind(userid(username),
                                         username,
                                         fullname,
                                         "salt", // FIXME salt
-                                        password,
+                                        encryptedPassword,
                                         Collections.singletonList(firstTimestamp));
     ResultSet insertResult = session.execute(insert);
     if (!insertResult.wasApplied()) {
@@ -98,7 +102,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
         .username(username)
         .fullname(fullname)
         .salt("salt") // FIXME
-        .password(password)
+        .password(encryptedPassword)
         .loginTimestamps(firstTimestamp)
         .build();
   }
