@@ -37,11 +37,11 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   private final Cluster cluster;
   private Session session;
 
-  public CassandraDataStore(String node, final Clock clock) {
-    this.clock = clock;
+  public CassandraDataStore(String node) {
+    this.clock = Clock.systemUTC();
     cluster = connect(node);
-    createSchema();
     session = cluster.connect();
+    createSchema();
 
     SELECT = session.prepare(
         "SELECT * FROM user.accounts WHERE username = ?;");
@@ -125,7 +125,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
       throw new EndpointException(Status.NOT_FOUND, "User not found");
     }
 
-    BoundStatement update = UPDATE.bind(newTimestamp, username);
+    BoundStatement update = UPDATE.bind(Collections.singletonList(newTimestamp), username);
     ResultSet updateResult = session.execute(update);
     if (!updateResult.wasApplied()) {
       LOG.warn("Could not update activity for user {}", username);
