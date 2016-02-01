@@ -32,4 +32,5 @@ curl -v -X POST -d '{"username":"eu2","password":"1234","fullname":"MI"}' http:/
   - Middleware json serialization
   - Middleware EndpointException ?
   - HTTPS
+  - Move client to its own module (+common module)
 
