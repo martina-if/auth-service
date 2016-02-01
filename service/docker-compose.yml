@@ -1,0 +1,15 @@
+auth:
+  image: 'auth-service'
+  ports:
+    - '8080:8080'
+  links:
+    - cassandra
+  environment:
+    - CASSANDRA_NODE="${CASSANDRA_PORT_9042_TCP_ADDR}"
+
+cassandra:
+  image: 'cassandra'
+  hostname: 'cassandra'
+  ports:
+    - '9160:9160'
+    - '9042:9042'
