@@ -34,4 +34,5 @@ curl -v -X POST -d '{"username":"eu2","password":"1234","fullname":"MI"}' http:/
   - HTTPS
   - Use auth-client for system tests
   - Move client to its own module (+common module)
+  - hash(username) == userid primary key for table
 
