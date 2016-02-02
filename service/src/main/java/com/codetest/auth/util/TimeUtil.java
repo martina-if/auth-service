@@ -18,4 +18,8 @@ public class TimeUtil {
   public static String timestamp(Clock clock) {
     return DateTimeFormatter.ISO_INSTANT.format(clock.instant().atZone(zoneId));
   }
+
+  public static String timestamp(LocalDateTime dateTime) {
+    return DateTimeFormatter.ISO_INSTANT.format(dateTime);
+  }
 }
