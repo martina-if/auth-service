@@ -55,15 +55,6 @@ public class ActivityResource implements RouteProvider {
           Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing username")));
     }
 
-    // Check authorization
-    Optional<String> sessionToken = HeadersUtil.getSessionToken(context.request());
-    Optional<String> authUsername = HeadersUtil.getUsername(context.request());
-    if (!sessionToken.isPresent() ||
-        !authUsername.isPresent() ||
-        !sessionStore.isValidToken(authUsername.get(), sessionToken.get())) {
-      return Futures.immediateFuture(Response.forStatus(Status.UNAUTHORIZED));
-    }
-
     // Recover user data for username
     ListenableFuture<Optional<UserData>> userDataFuture = userDataStore.fetchUserData(activityUsername);
 
@@ -71,6 +62,15 @@ public class ActivityResource implements RouteProvider {
 
       if (!userData.isPresent()) {
         return Response.forStatus(Status.BAD_REQUEST); // Leaking usernames..
+      }
+
+      // Check authorization
+      Optional<String> sessionToken = HeadersUtil.getSessionToken(context.request());
+      Optional<String> authUsername = HeadersUtil.getUsername(context.request());
+      if (!sessionToken.isPresent() ||
+          !authUsername.isPresent() ||
+          !sessionStore.isValidToken(authUsername.get(), sessionToken.get())) {
+        return Response.forStatus(Status.UNAUTHORIZED);
       }
 
       List<String> allLogins = userData.get().loginTimestamps();

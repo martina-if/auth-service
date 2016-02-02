@@ -4,7 +4,6 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.slf4j.Logger;
 
 import java.nio.charset.Charset;
-import java.security.MessageDigest;
 
 import javax.crypto.spec.SecretKeySpec;
 
@@ -24,18 +23,13 @@ public class Passwords {
 
   public boolean checkPassword(String passwordText, String salt, String encryptedPassword) {
     String givenPassword = encryptPassword(passwordText, salt);
-    return isPasswordHashEqual(givenPassword, encryptedPassword);
+    return CryptoUtil.secureEquals(givenPassword, encryptedPassword);
   }
 
   public String encryptPassword(String passwordText, String salt) {
     final byte[] loginHash = DigestUtils.sha256(salt + " " + passwordText);
     return new String(CryptoUtil.encrypt(loginHash, serverKey),
                       Charset.forName("UTF-8"));
-  }
-
-  private static boolean isPasswordHashEqual(final String passwordToCheck, final String hashedPassword) {
-    // MessageDigest.isEqual does constant time comparison
-    return MessageDigest.isEqual(passwordToCheck.getBytes(), hashedPassword.getBytes());
   }
 
 }

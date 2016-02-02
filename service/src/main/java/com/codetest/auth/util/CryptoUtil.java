@@ -5,6 +5,8 @@ import com.spotify.apollo.Status;
 
 import org.slf4j.Logger;
 
+import java.security.MessageDigest;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -24,4 +26,12 @@ public class CryptoUtil {
       throw new EndpointException(Status.INTERNAL_SERVER_ERROR, "server error");
     }
   }
+
+  /**
+   * Constant time equals. Avoids time attacks
+   */
+  public static boolean secureEquals(final String a, final String b) {
+    return MessageDigest.isEqual(a.getBytes(), b.getBytes());
+  }
+
 }

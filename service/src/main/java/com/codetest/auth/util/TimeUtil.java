@@ -20,6 +20,10 @@ public class TimeUtil {
   }
 
   public static String timestamp(LocalDateTime dateTime) {
-    return DateTimeFormatter.ISO_INSTANT.format(dateTime);
+    return dateTime.atZone(ZoneId.of("UTC")).format(DateTimeFormatter.ISO_INSTANT);
+  }
+
+  public static LocalDateTime parseDatetime(String text) {
+    return LocalDateTime.from(DateTimeFormatter.ISO_DATE_TIME.parse(text)); // FIXME why can't I parse with ISO_INSTANT?
   }
 }
