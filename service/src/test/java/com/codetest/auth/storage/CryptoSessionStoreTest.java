@@ -8,21 +8,18 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.temporal.ChronoUnit;
 
-import javax.crypto.spec.SecretKeySpec;
-
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 public class CryptoSessionStoreTest {
 
+  private static final String testingKey = "0123456789012345";
+
   @Test
   public void basicTest() {
     Clock clock = Clock.fixed(Instant.now(), ZoneId.of("UTC"));
-    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(
-        clock,
-        2,
-        new SecretKeySpec("0123456789012345".getBytes(), "AES"));
+    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(clock, 2, testingKey);
 
     String token = cryptoSessionStore.createSessionToken("someuser");
     assertTrue(cryptoSessionStore.isValidToken("someuser", token));
@@ -31,10 +28,7 @@ public class CryptoSessionStoreTest {
   @Test
   public void basicTestFailed() {
     Clock clock = Clock.fixed(Instant.now(), ZoneId.of("UTC"));
-    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(
-        clock,
-        2,
-        new SecretKeySpec("0123456789012345".getBytes(), "AES"));
+    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(clock, 2, testingKey);
 
     String token = cryptoSessionStore.createSessionToken("someuser");
     assertTrue(cryptoSessionStore.isValidToken("someuser2", token));
@@ -47,10 +41,7 @@ public class CryptoSessionStoreTest {
     Instant futureInstant = now.plus(3, ChronoUnit.DAYS);
     when(clock.instant()).thenReturn(now, futureInstant);
     when(clock.getZone()).thenReturn(ZoneId.of("UTC"));
-    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(
-        clock,
-        2,
-        new SecretKeySpec("0123456789012345".getBytes(), "AES"));
+    CryptoSessionStore cryptoSessionStore = new CryptoSessionStore(clock, 2, testingKey);
 
     String token = cryptoSessionStore.createSessionToken("someuser");
 

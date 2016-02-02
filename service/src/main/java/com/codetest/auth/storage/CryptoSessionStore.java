@@ -1,5 +1,6 @@
 package com.codetest.auth.storage;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 
@@ -35,19 +36,24 @@ public class CryptoSessionStore implements SessionStore {
 
   private static final Logger LOG = getLogger(CryptoSessionStore.class);
   private static final int SESSION_PARTS = 3;
-  private final int EXPIRATION_DAYS;
+  private final int expirationDays;
   private final Clock clock;
   private final SecretKeySpec serverKey;
 
-  public CryptoSessionStore(final Clock clock, int expirationDays, final SecretKeySpec serverKey) {
+  public CryptoSessionStore(int expirationDays, final String serverKeyText) {
+    this(Clock.systemUTC(), expirationDays, serverKeyText);
+  }
+
+  @VisibleForTesting
+  CryptoSessionStore(final Clock clock, int expirationDays, final String serverKeyText) {
     this.clock = clock;
-    EXPIRATION_DAYS = expirationDays;
-    this.serverKey = serverKey;
+    this.expirationDays = expirationDays;
+    this.serverKey = new SecretKeySpec(serverKeyText.getBytes(), "AES");;
   }
 
   @Override
   public String createSessionToken(final String username) {
-    LocalDateTime expirationTime = TimeUtil.now(clock).plusDays(EXPIRATION_DAYS);
+    LocalDateTime expirationTime = TimeUtil.now(clock).plusDays(expirationDays);
     String expirationTimestamp = TimeUtil.timestamp(expirationTime);
 
     String signature = createSignature(username, expirationTimestamp);

@@ -4,7 +4,7 @@ import com.codetest.auth.api.ActivityResource;
 import com.codetest.auth.api.LoginResource;
 import com.codetest.auth.api.RegisterResource;
 import com.codetest.auth.storage.CassandraDataStore;
-import com.codetest.auth.storage.InMemSessionStore;
+import com.codetest.auth.storage.CryptoSessionStore;
 import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserDataStore;
 import com.codetest.auth.util.Passwords;
@@ -26,7 +26,9 @@ public class ServiceRunner {
     Passwords passwords = new Passwords(config.getString("passwords.key"));
 
     UserDataStore userDataStore = new CassandraDataStore(cassandraNode, passwords);
-    SessionStore sessionStore = new InMemSessionStore();
+    int tokenExpirationDays = config.getInt("sessions.expiration-days");
+    String sessionServerKey = config.getString("sessions.key");
+    SessionStore sessionStore = new CryptoSessionStore(tokenExpirationDays, sessionServerKey);
 
     LoginResource loginResource = new LoginResource(sessionStore, userDataStore, passwords);
     RegisterResource registerResource = new RegisterResource(userDataStore);
