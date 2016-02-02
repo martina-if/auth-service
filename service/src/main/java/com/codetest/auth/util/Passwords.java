@@ -15,7 +15,7 @@ import javax.crypto.spec.SecretKeySpec;
 import static org.slf4j.LoggerFactory.getLogger;
 
 /**
- * Paswords are stored as AES(SHA1( salt + " " + passwordtext))
+ * Paswords are stored as AES(SHA256( salt + " " + passwordtext))
  */
 public class Passwords {
 
@@ -32,7 +32,7 @@ public class Passwords {
   }
 
   public String encryptPassword(String passwordText, String salt) {
-    final byte[] loginHash = DigestUtils.sha1(salt + " " + passwordText);
+    final byte[] loginHash = DigestUtils.sha256(salt + " " + passwordText);
     return new String(encrypt(loginHash), Charset.forName("UTF-8") );
   }
 
