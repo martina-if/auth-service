@@ -1,5 +1,8 @@
 package com.codetest.auth.api;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
@@ -36,19 +39,20 @@ public class ActivityResource implements RouteProvider {
   @Override
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
-        Route.sync("GET", "/v0/activity/<username>", this::loginActivity)
+        Route.future("GET", "/v0/activity/<username>", this::loginActivity)
             .withMiddleware(Middlewares.checkExceptions())
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 
-  private Response<ActivityResponse> loginActivity(RequestContext context) {
+  private ListenableFuture<Response<ActivityResponse>> loginActivity(RequestContext context) {
 
     // Parse request
     String activityUsername = context.pathArgs().get("username");
     if (activityUsername == null) {
-      return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing username"));
+      return Futures.immediateFuture(
+          Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing username")));
     }
 
     // Check authorization
@@ -57,23 +61,27 @@ public class ActivityResource implements RouteProvider {
     if (!sessionToken.isPresent() ||
         !authUsername.isPresent() ||
         !sessionStore.isValidToken(authUsername.get(), sessionToken.get())) {
-      return Response.forStatus(Status.UNAUTHORIZED);
+      return Futures.immediateFuture(Response.forStatus(Status.UNAUTHORIZED));
     }
 
     // Recover user data for username
-    Optional<UserData> userData = userDataStore.fetchUserData(activityUsername);
-    if (!userData.isPresent()) {
-      return Response.forStatus(Status.BAD_REQUEST); // Leaking usernames..
-    }
+    ListenableFuture<Optional<UserData>> userDataFuture = userDataStore.fetchUserData(activityUsername);
 
-    List<String> allLogins = userData.get().loginTimestamps();
-    
-    // Get last 5 elements of the list since each new attempt is appended to the end
-    List<String> lastLogins = allLogins.subList(Math.max(0, allLogins.size() - NUM_LOGIN_ATTEMPTS), allLogins.size());
+    return Futures.transform(userDataFuture, (Optional<UserData> userData) -> {
 
-    return Response.forPayload(new ActivityResponseBuilder()
-                                   .logins(lastLogins)
-                                   .build());
+      if (!userData.isPresent()) {
+        return Response.forStatus(Status.BAD_REQUEST); // Leaking usernames..
+      }
+
+      List<String> allLogins = userData.get().loginTimestamps();
+
+      // Get last 5 elements of the list since each new attempt is appended to the end
+      List<String> lastLogins = allLogins.subList(Math.max(0, allLogins.size() - NUM_LOGIN_ATTEMPTS), allLogins.size());
+
+      return Response.forPayload(new ActivityResponseBuilder()
+                                     .logins(lastLogins)
+                                     .build());
+    });
   }
 
   @AutoMatter

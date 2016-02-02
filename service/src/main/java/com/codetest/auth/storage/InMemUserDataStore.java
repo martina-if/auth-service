@@ -2,6 +2,8 @@ package com.codetest.auth.storage;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.codetest.auth.EndpointException;
 import com.codetest.auth.util.TimeUtil;
@@ -31,7 +33,7 @@ public class InMemUserDataStore implements UserDataStore {
   }
 
   @Override
-  public UserData createUserData(final String username, final String password, final String fullname) {
+  public ListenableFuture<UserData> createUserData(final String username, final String password, final String fullname) {
     UserData userData = new UserDataBuilder()
         .username(username)
         .password(password) // FIXME
@@ -40,16 +42,16 @@ public class InMemUserDataStore implements UserDataStore {
         .loginTimestamps(Collections.singletonList(TimeUtil.timestamp(clock)))
         .build();
     users.put(username, userData);
-    return userData;
+    return Futures.immediateFuture(userData);
   }
 
   @Override
-  public Optional<UserData> fetchUserData(final String username) {
-    return Optional.ofNullable(users.get(username));
+  public ListenableFuture<Optional<UserData>> fetchUserData(final String username) {
+    return Futures.immediateFuture(Optional.ofNullable(users.get(username)));
   }
 
   @Override
-  public void markUserAccess(final String username) {
+  public ListenableFuture<Void> markUserAccess(final String username) {
     UserData userData = users.get(username);
     if (userData == null) {
       throw new EndpointException(Status.BAD_REQUEST, "Invalid request");
@@ -58,5 +60,6 @@ public class InMemUserDataStore implements UserDataStore {
     timestamps.add(TimeUtil.timestamp(clock));
     UserData newUserData = UserDataBuilder.from(userData).loginTimestamps(timestamps).build();
     users.put(username, newUserData);
+    return Futures.immediateFuture(null);
   }
 }

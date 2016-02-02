@@ -31,17 +31,19 @@ public class Middlewares {
                   return response;
                 })
                 .exceptionally(t -> {
-                  if (t instanceof EndpointException) {
-                    EndpointException e = (EndpointException) t;
+                  if (t.getCause() instanceof EndpointException) {
+                    EndpointException e = (EndpointException) t.getCause();
                     LOG.info("Returned status {} to request {}", e.getStatusCode(), requestContext.request().uri());
                     return Response.<T>forStatus(e.getStatusCode());
                   } else {
-                    LOG.info("Returned status {} to request {}", Status.INTERNAL_SERVER_ERROR, requestContext.request().uri());
+                    LOG.info("Returned status {} to request {}",
+                             Status.INTERNAL_SERVER_ERROR, requestContext.request().uri(),
+                             t);
                     return Response.<T>forStatus(Status.INTERNAL_SERVER_ERROR);
                   }
                 });
           } catch (EndpointException e) {
-            LOG.info("Returned status {} to request {}", e.getStatusCode(), requestContext.request().uri());
+            LOG.info("Returned status {} to request {}", e.getStatusCode(), requestContext.request().uri(), e);
             return CompletableFuture.completedFuture(Response.<T>forStatus(e.getStatusCode()))
                 .toCompletableFuture();
           }

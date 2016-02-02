@@ -11,6 +11,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -34,8 +35,8 @@ public class InMemUserDataStoreTest {
   }
 
   @Test
-  public void testCreate() {
-    UserData userData = inMemUserDataStore.createUserData("username", "passwd", "fullname");
+  public void testCreate() throws ExecutionException, InterruptedException {
+    UserData userData = inMemUserDataStore.createUserData("username", "passwd", "fullname").get();
     assertEquals("username", userData.username());
     assertEquals("passwd", userData.password()); // FIXME
     assertEquals("salt", userData.salt()); // FIXME
@@ -45,9 +46,9 @@ public class InMemUserDataStoreTest {
   }
 
   @Test
-  public void testMarkAccessUserDoesntExist() {
+  public void testMarkAccessUserDoesntExist() throws ExecutionException, InterruptedException {
     try {
-      inMemUserDataStore.markUserAccess("nonexistingusername");
+      inMemUserDataStore.markUserAccess("nonexistingusername").get();
       fail("Call to markUserAccess for a non existing user should throw an exception");
     } catch (EndpointException e) {
       // expected
@@ -55,10 +56,10 @@ public class InMemUserDataStoreTest {
   }
 
   @Test
-  public void testMarkUserAccess() {
-    inMemUserDataStore.createUserData("username", "passwd", "fullname");
-    inMemUserDataStore.markUserAccess("username");
-    Optional<UserData> userdata = inMemUserDataStore.fetchUserData("username");
+  public void testMarkUserAccess() throws ExecutionException, InterruptedException {
+    inMemUserDataStore.createUserData("username", "passwd", "fullname").get();
+    inMemUserDataStore.markUserAccess("username").get();
+    Optional<UserData> userdata = inMemUserDataStore.fetchUserData("username").get();
     assertTrue(userdata.isPresent());
     assertEquals(2, userdata.get().loginTimestamps().size());
     assertEquals(CURRENT_TIME, userdata.get().loginTimestamps().get(0));

@@ -1,5 +1,8 @@
 package com.codetest.auth.api;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
@@ -38,17 +41,18 @@ public class LoginResource implements RouteProvider {
   @Override
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
-        Route.sync("POST", "/v0/login", this::login)
+        Route.future("POST", "/v0/login", this::login)
             .withMiddleware(Middlewares.checkExceptions())
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 
-  private Response<LoginResponse> login(RequestContext context) {
+  private ListenableFuture<Response<LoginResponse>> login(RequestContext context) {
     // Parse request TODO: Validate data
     if (!context.request().payload().isPresent()) {
-      return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing payload"));
+      return Futures.immediateFuture(
+          Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing payload")));
     }
 
     LoginRequest loginRequest;
@@ -56,35 +60,44 @@ public class LoginResource implements RouteProvider {
       loginRequest = ObjectMappers.JSON.readValue(context.request().payload().get().toByteArray(),
                                                   LoginRequest.class);
     } catch (IOException e) {
-      return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload"));
+      return Futures.immediateFuture(
+          Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload")));
     }
 
     // Recover User data from store
     String username = loginRequest.username();
-    Optional<UserData> userData = userDataStore.fetchUserData(username);
-    if (!userData.isPresent()) {
-      return Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate"));
-    }
+    ListenableFuture<Optional<UserData>> userDataFuture = userDataStore.fetchUserData(username);
 
-    boolean validPassword = passwords.checkPassword(loginRequest.password(),
-                                                    userData.get().salt(),
-                                                    userData.get().password());
-    if (!validPassword) {
-      return Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate"));
-    }
+    return Futures.transform(userDataFuture, (Optional<UserData> userData) -> {
 
-    // Write access time
-    userDataStore.markUserAccess(username);
+      if (!userData.isPresent()) {
+        return Futures.immediateFuture(
+            Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate")));
+      }
 
-    // Generate token
-    String sessionToken = sessionStore.createSessionToken(username);
-    LoginResponse loginResponse = new LoginResponseBuilder()
-        .status("200")
-        .username(username)
-        .session(sessionToken)
-        .build();
+      boolean validPassword = passwords.checkPassword(loginRequest.password(),
+                                                      userData.get().salt(),
+                                                      userData.get().password());
+      if (!validPassword) {
+        return Futures.immediateFuture(
+            Response.forStatus(Status.UNAUTHORIZED.withReasonPhrase("Could not authenticate")));
+      }
 
-    return Response.of(Status.OK, loginResponse);
+      // Write access time
+      ListenableFuture<Void> markActivityFuture = userDataStore.markUserAccess(username);
+
+      return Futures.transform(markActivityFuture, (Void ignored) -> {
+        // Generate token
+        String sessionToken = sessionStore.createSessionToken(username);
+        LoginResponse loginResponse = new LoginResponseBuilder()
+            .status("200")
+            .username(username)
+            .session(sessionToken)
+            .build();
+
+        return Response.of(Status.OK, loginResponse);
+      });
+    });
   }
 
 

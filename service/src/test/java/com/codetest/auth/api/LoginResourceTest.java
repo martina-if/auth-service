@@ -1,5 +1,7 @@
 package com.codetest.auth.api;
 
+import com.google.common.util.concurrent.Futures;
+
 import com.codetest.auth.storage.SessionStore;
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataBuilder;
@@ -52,13 +54,15 @@ public class LoginResourceTest {
     when(passwords.checkPassword(anyString(), anyString(), anyString()))
         .thenReturn(true);
     when(userDataStore.fetchUserData(anyString()))
-        .thenReturn(Optional.of(USER));
+        .thenReturn(Futures.immediateFuture(Optional.of(USER)));
+    when(userDataStore.markUserAccess(anyString()))
+        .thenReturn(Futures.immediateFuture(null));
 
   }
   @Test
   public void testPasswordCorrect() throws Exception {
     when(userDataStore.fetchUserData(anyString()))
-        .thenReturn(Optional.of(USER));
+        .thenReturn(Futures.immediateFuture(Optional.of(USER)));
     Response<ByteString> response = sendRequest("username", "password");
     assertEquals(200, response.status().code());
   }
@@ -76,7 +80,7 @@ public class LoginResourceTest {
   public void testNonExistingUser() throws Exception {
     reset(userDataStore);
     when(userDataStore.fetchUserData(anyString()))
-        .thenReturn(Optional.<UserData>empty());
+        .thenReturn(Futures.immediateFuture(Optional.<UserData>empty()));
     Response < ByteString > response = sendRequest("username", "pass");
     assertEquals(401, response.status().code());
   }

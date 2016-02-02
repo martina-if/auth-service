@@ -1,5 +1,8 @@
 package com.codetest.auth.api;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import com.codetest.auth.storage.UserData;
 import com.codetest.auth.storage.UserDataStore;
 import com.codetest.auth.util.ObjectMappers;
@@ -32,17 +35,18 @@ public class RegisterResource implements RouteProvider {
   @Override
   public Stream<? extends Route<? extends AsyncHandler<?>>> routes() {
     return Stream.of(
-        Route.sync("POST", "/v0/register", this::registerUser)
+        Route.future("POST", "/v0/register", this::registerUser)
             .withMiddleware(Middlewares.checkExceptions())
             .withMiddleware(JsonSerializerMiddlewares.
                 jsonSerializeResponse(ObjectMappers.JSON.writer()))
     );
   }
 
-  private Response<RegisterResponse> registerUser(RequestContext context) {
+  private ListenableFuture<Response<RegisterResponse>> registerUser(RequestContext context) {
     // Parse request
     if (!context.request().payload().isPresent()) {
-      return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing payload"));
+      return Futures.immediateFuture(
+          Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Missing payload")));
     }
 
     RegisterRequest request;
@@ -50,20 +54,22 @@ public class RegisterResource implements RouteProvider {
       request = ObjectMappers.JSON.readValue(context.request().payload().get().toByteArray(),
                                              RegisterRequest.class);
     } catch (IOException e) {
-      return Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload"));
+      return Futures.immediateFuture(
+          Response.forStatus(Status.BAD_REQUEST.withReasonPhrase("Invalid payload")));
     }
 
     // TODO Validate input data
 
     // Store new user data
-    UserData userData = userDataStore.createUserData(request.username(),
-                                                     request.password(),
-                                                     request.fullname());
+    ListenableFuture<UserData> userDataFuture = userDataStore.createUserData(request.username(),
+                                                                             request.password(),
+                                                                             request.fullname());
 
-    return Response.forPayload(new RegisterResponseBuilder()
-                                   .fullname(userData.fullname())
-                                   .username(userData.username())
-                                   .build());
+    return Futures.transform(userDataFuture, (UserData userData) ->
+        Response.forPayload(new RegisterResponseBuilder()
+                                .fullname(userData.fullname())
+                                .username(userData.username())
+                                .build()));
 
   }
 

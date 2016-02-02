@@ -3,6 +3,8 @@ package com.codetest.auth.storage;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.codetest.auth.EndpointException;
 import com.codetest.auth.util.Passwords;
@@ -13,6 +15,7 @@ import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.ResultSetFuture;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.exceptions.AlreadyExistsException;
@@ -78,71 +81,91 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   }
 
   @Override
-  public UserData createUserData(final String username, final String passwordText, final String fullname) {
+  public ListenableFuture<UserData> createUserData(final String username, final String passwordText, final String fullname) {
 
     // Check if user exists
     BoundStatement select = SELECT.bind(userid(username));
-    ResultSet selectResult= session.execute(select); // FIXME make async
-    if (!selectResult.isExhausted()) {
-      throw new EndpointException(Status.BAD_REQUEST, "Unable to create user");
-    }
+    ResultSetFuture selectResult= session.executeAsync(select);
+    return Futures.transform(selectResult, (ResultSet userRow) -> {
 
-    // Insert user
-    String firstTimestamp = TimeUtil.timestamp(clock);
-    String salt = newSalt();
-    String encryptedPassword = passwords.encryptPassword(passwordText, salt);
-    BoundStatement insert = INSERT.bind(userid(username),
-                                        username,
-                                        fullname,
-                                        salt,
-                                        encryptedPassword,
-                                        Collections.singletonList(firstTimestamp));
-    ResultSet insertResult = session.execute(insert);
-    if (!insertResult.wasApplied()) {
-      throw new EndpointException(Status.INTERNAL_SERVER_ERROR, "Unable to create user");
-    }
+      if (!userRow.isExhausted()) {
+        throw new EndpointException(Status.BAD_REQUEST, "Unable to create user");
+      }
 
-    return new UserDataBuilder()
-        .username(username)
-        .fullname(fullname)
-        .salt(salt)
-        .password(encryptedPassword)
-        .loginTimestamps(firstTimestamp)
-        .build();
+      // Insert user
+      String firstTimestamp = TimeUtil.timestamp(clock);
+      String salt = newSalt();
+      String encryptedPassword = passwords.encryptPassword(passwordText, salt);
+      BoundStatement insert = INSERT.bind(userid(username),
+                                          username,
+                                          fullname,
+                                          salt,
+                                          encryptedPassword,
+                                          Collections.singletonList(firstTimestamp));
+
+      ResultSetFuture insertResultFuture = session.executeAsync(insert);
+      return Futures.transform(insertResultFuture, (ResultSet insertResult) -> {
+        if (!insertResult.wasApplied()) {
+          throw new EndpointException(Status.INTERNAL_SERVER_ERROR, "Unable to create user");
+        }
+
+        return new UserDataBuilder()
+            .username(username)
+            .fullname(fullname)
+            .salt(salt)
+            .password(encryptedPassword)
+            .loginTimestamps(firstTimestamp)
+            .build();
+      });
+    });
   }
 
   @Override
-  public Optional<UserData> fetchUserData(final String username) {
+  public ListenableFuture<Optional<UserData>> fetchUserData(final String username) {
     BoundStatement select = SELECT.bind(userid(username));
-    ResultSet selectResult = session.execute(select); // FIXME make async
-    if (selectResult.isExhausted()) {
-      return Optional.empty();
-    }
-    Row userRow = selectResult.one();
-    return Optional.of(new UserDataBuilder()
-                           .username(userRow.getString("username"))
-                           .fullname(userRow.getString("fullname"))
-                           .salt(userRow.getString("salt"))
-                           .password(userRow.getString("password"))
-                           .loginTimestamps(userRow.getList("activity", String.class))
-                           .build());
+    ResultSetFuture selectResultFuture = session.executeAsync(select);
+
+    return Futures.transform(selectResultFuture, (ResultSet selectResult) -> {
+      if (selectResult.isExhausted()) {
+        return Optional.<UserData>empty();
+      }
+      Row userRow = selectResult.one();
+      return Optional.of(new UserDataBuilder()
+                             .username(userRow.getString("username"))
+                             .fullname(userRow.getString("fullname"))
+                             .salt(userRow.getString("salt"))
+                             .password(userRow.getString("password"))
+                             .loginTimestamps(userRow.getList("activity", String.class))
+                             .build());
+    });
+
   }
 
   @Override
-  public void markUserAccess(final String username) {
+  public ListenableFuture<Void> markUserAccess(final String username) {
     String newTimestamp = TimeUtil.timestamp(clock);
-    ResultSet selectResult = session.execute(SELECT.bind(userid(username)));
-    if (selectResult.isExhausted()) {
-      throw new EndpointException(Status.NOT_FOUND, "User not found");
-    }
+    ResultSetFuture selectResultFuture = session.executeAsync(SELECT.bind(userid(username)));
 
-    BoundStatement update = UPDATE.bind(Collections.singletonList(newTimestamp),
-                                        userid(username));
-    ResultSet updateResult = session.execute(update);
-    if (!updateResult.wasApplied()) {
-      LOG.warn("Could not update activity for user {}", username);
-      throw new EndpointException(Status.INTERNAL_SERVER_ERROR, "Could not update user");
-    }
+    return Futures.transform(selectResultFuture, (ResultSet selectResult) -> {
+
+      if (selectResult.isExhausted()) {
+        throw new EndpointException(Status.NOT_FOUND, "User not found");
+      }
+
+      BoundStatement update = UPDATE.bind(Collections.singletonList(newTimestamp),
+                                          userid(username));
+
+      ResultSetFuture updateResultFuture = session.executeAsync(update);
+
+      return Futures.transform(updateResultFuture, (ResultSet updateResult) -> {
+
+        if (!updateResult.wasApplied()) {
+          LOG.warn("Could not update activity for user {}", username);
+          throw new EndpointException(Status.INTERNAL_SERVER_ERROR, "Could not update user");
+        }
+        return Futures.immediateFuture(null);
+      });
+    });
   }
 
   @Override
