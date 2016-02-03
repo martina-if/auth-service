@@ -8,8 +8,10 @@ Simple authentication service.
 
 ## Run
 
-```java -jar service/target/auth-service-0.1-SNAPSHOT.jar
+```
+java -jar service/target/auth-service-0.1-SNAPSHOT.jar
 curl http://localhost:8080/ping```
+```
 
 ## Build and run in container
 
@@ -39,6 +41,7 @@ Payload: {"logins":["2016-02-03T20:35:42.178Z","2016-02-03T20:36:07.771Z","2016-
 
 
 ## Sample queries
+
 ```
 curl -v -X POST -d '{"username":"myname","password":"pass"}' http://localhost:8080/v0/login
 
