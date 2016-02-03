@@ -15,6 +15,21 @@ import java.util.List;
 
 import okio.ByteString;
 
+/**
+ * Command line client for the auth service.
+ * TODO:
+ *   - Dont output stacktraces, catch all exceptions
+ *
+ * Command line arguments:
+ *   -h    host (optional)
+ *   -P    port (optional)
+ *   -u    username (username to be authenticated or registered)
+ *   -f    full name
+ *   -p    password
+ *   -s    session token
+ *   -a    username to lookup activity for
+ *
+ */
 public class AuthClientMain {
 
   private static final List<String> COMMANDS = ImmutableList.of("register", "login", "activity");
@@ -81,7 +96,7 @@ public class AuthClientMain {
                           .desc("Session token for authentication")
                           .build());
     options.addOption(Option.builder("a")
-                          .argName("login-username")
+                          .argName("activity-username")
                           .hasArg()
                           .desc("Username to lookup login times for")
                           .build());
