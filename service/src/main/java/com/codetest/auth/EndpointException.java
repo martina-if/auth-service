@@ -4,6 +4,10 @@ import com.spotify.apollo.StatusType;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * An exception that contains the status code that should be
+ * sent for the current request
+ */
 public class EndpointException extends RuntimeException {
 
   private final StatusType statusType;

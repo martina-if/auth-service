@@ -8,7 +8,8 @@ import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Todo create a token including username, expiration time and signature. Then no need for storage
+ * In memory session store. It creates random tokens and stores them
+ * in memory for one hour. After that time they expire.
  */
 public class InMemSessionStore implements SessionStore {
 

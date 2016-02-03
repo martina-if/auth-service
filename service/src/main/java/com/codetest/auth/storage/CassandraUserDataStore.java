@@ -11,6 +11,7 @@ import com.codetest.auth.util.Passwords;
 import com.codetest.auth.util.TimeUtil;
 import com.datastax.driver.core.BoundStatement;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.Host;
 import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.PreparedStatement;
@@ -58,15 +59,17 @@ public class CassandraUserDataStore implements UserDataStore, Closeable {
     createSchema();
 
     SELECT = session.prepare(
-        "SELECT * FROM user.accounts WHERE userid = ?;");
+        "SELECT * FROM user.accounts WHERE userid = ?;")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_ONE);
     INSERT = session.prepare(
         "INSERT INTO user.accounts (userid, username, fullname, salt, password, activity) " +
         "VALUES (?, ?, ?, ?, ? , ?)" +
         "IF NOT EXISTS" +
-        ";");
+        ";")
+        .setConsistencyLevel(ConsistencyLevel.ALL);
     UPDATE = session.prepare(
-        "UPDATE user.accounts SET activity = activity + ? WHERE userid = ?"
-    );
+        "UPDATE user.accounts SET activity = activity + ? WHERE userid = ?")
+        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
   }
 
   public Cluster connect(String node) {
