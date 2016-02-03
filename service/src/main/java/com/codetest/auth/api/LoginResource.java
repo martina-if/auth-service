@@ -26,6 +26,14 @@ import javax.annotation.Nullable;
 
 import io.norberg.automatter.AutoMatter;
 
+/**
+ * login endpoint. Accepts a POST request with a json body
+ * that contains a username and a password. See {@link LoginRequest}
+ * for the json format.
+ *
+ * It will reply with OK if credentials are correct or either
+ * BAD_REQUEST or UNAUTHORIZED in case of failure.
+ */
 public class LoginResource implements RouteProvider {
 
   private final SessionStore sessionStore;

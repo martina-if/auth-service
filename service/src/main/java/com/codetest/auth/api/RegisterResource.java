@@ -21,8 +21,14 @@ import java.util.stream.Stream;
 import io.norberg.automatter.AutoMatter;
 
 /**
- * Endpoints for registering a new user
- * TODO: Also log the user in and return session token
+ * Endpoints for registering a new user. It accepts a POST request
+ * with a json payload containing username, fullname and password.
+ * See {@link RegisterRequest} for the expected json format.
+ *
+ * It will return OK if the registration was successful with a json
+ * payload following this format: {@link RegisterResponse}.
+ * It can answer with BAD_REQUEST for missing or malformed data in
+ * the payload.
  */
 public class RegisterResource implements RouteProvider {
 
