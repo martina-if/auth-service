@@ -35,9 +35,12 @@ import java.util.Optional;
 
 import static org.slf4j.LoggerFactory.getLogger;
 
-public class CassandraDataStore implements UserDataStore, Closeable {
+/***
+ * Cassandra storage for user data
+ */
+public class CassandraUserDataStore implements UserDataStore, Closeable {
 
-  private static final Logger LOG = getLogger(CassandraDataStore.class);
+  private static final Logger LOG = getLogger(CassandraUserDataStore.class);
   private final PreparedStatement SELECT;
   private final PreparedStatement INSERT;
   private final PreparedStatement UPDATE;
@@ -47,7 +50,7 @@ public class CassandraDataStore implements UserDataStore, Closeable {
   private final Cluster cluster;
   private Session session;
 
-  public CassandraDataStore(String node, final Passwords passwords) {
+  public CassandraUserDataStore(String node, final Passwords passwords) {
     this.passwords = passwords;
     this.clock = Clock.systemUTC();
     cluster = connect(node);
