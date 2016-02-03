@@ -13,6 +13,10 @@ import java.util.concurrent.ExecutionException;
 
 import okio.ByteString;
 
+/**
+ * This class handles the http connection to the auth service.
+ * Provides an API for the 3 endpoints: register, login and activity.
+ */
 public class AuthClient {
 
   private static final String BASE_URI = "http://%s/";

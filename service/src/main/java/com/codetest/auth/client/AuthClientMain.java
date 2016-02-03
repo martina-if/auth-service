@@ -18,7 +18,7 @@ import okio.ByteString;
 public class AuthClientMain {
 
   private static final List<String> COMMANDS = ImmutableList.of("register", "login", "activity");
-  private static AuthClient authClient = new AuthClient(new HttpClient());
+  private static AuthClient authClient;
 
   public static void main(String... args) {
     if (args.length < 1 || !COMMANDS.contains(args[0])) {
@@ -26,6 +26,8 @@ public class AuthClientMain {
     }
     try {
       CommandLine commandLine = parseArgs(args);
+
+      authClient = new AuthClient(new HttpClient(), getAddress(commandLine));
 
       switch (args[0]) {
         case "login":
@@ -88,9 +90,31 @@ public class AuthClientMain {
                           .hasArg()
                           .desc("Full name")
                           .build());
+    options.addOption(Option.builder("h")
+                      .argName("host")
+                      .hasArg()
+                      .desc("Host")
+                      .build());
+    options.addOption(Option.builder("P")
+                      .argName("port")
+                      .hasArg()
+                      .desc("Port")
+                      .build());
     CommandLineParser parser = new DefaultParser();
 
     return parser.parse(options, args);
+  }
+
+  /**
+   * Reads command line arguments and converts host and port to an
+   * address or uses default values localhost and port 8080
+   */
+  private static String getAddress(CommandLine commandLine) {
+    String host = commandLine.getOptionValue("h") != null ?
+                  commandLine.getOptionValue("h") : "localhost";
+    String port = commandLine.getOptionValue("P") != null ?
+                  commandLine.getOptionValue("P") : "8080";
+    return host + ":" + port;
   }
 
   private static String getOption(CommandLine commandLine, String argName) {
@@ -106,4 +130,5 @@ public class AuthClientMain {
     System.err.println(message);
     System.exit(-1);
   }
+
 }
